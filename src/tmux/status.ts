@@ -1,11 +1,10 @@
 import { randomUUID } from "node:crypto";
-import { ifOwner, type Run, redraw, resolveWindow } from "./runner.ts";
+import type { TmuxClient } from "./client.ts";
 
 const frames = ["□", "■"];
 
 export class TabStatus {
   private readonly token = randomUUID();
-  private window?: string;
   private claimed = false;
   private closed = false;
   private failed = false;
@@ -15,30 +14,22 @@ export class TabStatus {
   private pending: Promise<void> = Promise.resolve();
   private initializing: Promise<void> = Promise.resolve();
   private generation = 0;
-  private readonly run: Run;
+  private readonly tmux: TmuxClient;
 
-  constructor(run: Run) {
-    this.run = run;
+  constructor(tmux: TmuxClient) {
+    this.tmux = tmux;
   }
 
-  startSession(pane: string): Promise<void> {
-    this.initializing = this.initialize(pane);
+  startSession(): Promise<void> {
+    this.initializing = this.initialize();
     return this.initializing;
   }
 
-  private async initialize(pane: string): Promise<void> {
+  private async initialize(): Promise<void> {
     try {
-      const window = await resolveWindow(this.run, pane);
+      await this.tmux.resolveWindow();
       if (this.closed) return;
-      this.window = window;
-      await this.run([
-        "set-option",
-        "-w",
-        "-t",
-        window,
-        "@pi_notify_owner",
-        this.token,
-      ]);
+      await this.tmux.claimTabIndicator(this.token);
       this.claimed = true;
       if (!this.closed) this.settled();
     } catch {
@@ -77,23 +68,12 @@ export class TabStatus {
 
   private queue(value: string, generation: number): void {
     this.pending = this.pending.then(async () => {
-      if (
-        this.closed ||
-        this.failed ||
-        generation !== this.generation ||
-        !this.window
-      )
-        return;
+      if (this.closed || this.failed || generation !== this.generation) return;
       this.busy = true;
       try {
-        await ifOwner(
-          this.run,
-          this.window,
-          this.token,
-          `set-option -w -t ${this.window} @pi_notify_status ${value}`,
-        );
+        await this.tmux.setTabIndicator(this.token, value);
         // The guard is atomic with the write; subsequent redraw is harmless if superseded.
-        await redraw(this.run);
+        await this.tmux.refreshStatus();
       } catch {
         this.failed = true;
         this.stopTimer();
@@ -109,21 +89,10 @@ export class TabStatus {
     this.stopTimer();
     await this.initializing;
     await this.pending;
-    if (!this.claimed || !this.window) return;
+    if (!this.claimed) return;
     try {
-      await ifOwner(
-        this.run,
-        this.window,
-        this.token,
-        `set-option -w -u -t ${this.window} @pi_notify_status`,
-      );
-      await ifOwner(
-        this.run,
-        this.window,
-        this.token,
-        `set-option -w -u -t ${this.window} @pi_notify_owner`,
-      );
-      await redraw(this.run);
+      await this.tmux.clearTabIndicator(this.token);
+      await this.tmux.refreshStatus();
     } catch {
       // A vanished tmux server or window must not block Pi shutdown.
     }

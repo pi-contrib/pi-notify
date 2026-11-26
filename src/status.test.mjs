@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { resolveWindow, tmuxLocation } from "./tmux/runner.ts";
+import { TmuxClient } from "./tmux/client.ts";
 import { TabStatus } from "./tmux/status.ts";
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const createStatus = (run) => new TabStatus(new TmuxClient(run, "%2"));
 
 function fakeTmux() {
   const options = new Map();
@@ -47,22 +48,30 @@ function fakeTmux() {
 }
 
 test("location and target validation", async () => {
-  assert.equal(tmuxLocation({}), undefined);
-  assert.deepEqual(
-    tmuxLocation({ TMUX: "/tmp/socket,123,0", TMUX_PANE: "%2" }),
-    { socket: "/tmp/socket", pane: "%2" },
+  assert.equal(TmuxClient.fromEnv({}), undefined);
+  const client = TmuxClient.fromEnv(
+    { TMUX: "/tmp/socket,123,0", TMUX_PANE: "%2" },
+    (socket) => {
+      assert.equal(socket, "/tmp/socket");
+      return async () => "@9\n";
+    },
   );
+  assert.equal(client?.pane, "%2");
+  await client.resolveWindow();
   assert.equal(
-    tmuxLocation({ TMUX: "/tmp/socket,123,0", TMUX_PANE: "bad" }),
+    TmuxClient.fromEnv({ TMUX: "/tmp/socket,123,0", TMUX_PANE: "bad" }),
     undefined,
   );
-  await assert.rejects(resolveWindow(async () => "bad", "%2"));
+  await assert.rejects(new TmuxClient(async () => "bad", "%2").resolveWindow());
+  await assert.rejects(
+    new TmuxClient(async () => "", "%2").claimTabIndicator("token"),
+  );
 });
 
 test("start, intermediate end, settle, and shutdown only touch owned options", async () => {
   const tmux = fakeTmux();
-  const status = new TabStatus(tmux.run);
-  await status.startSession("%2");
+  const status = createStatus(tmux.run);
+  await status.startSession();
   await sleep(5);
   assert.equal(tmux.options.get("@pi_notify_status"), "✓");
   status.start();
@@ -75,6 +84,13 @@ test("start, intermediate end, settle, and shutdown only touch owned options", a
   assert.equal(tmux.options.get("@pi_notify_status"), "✓");
   await status.shutdown();
   assert.equal(tmux.options.size, 0);
+  assert.equal(
+    tmux.calls.filter((args) => args[0] === "display-message").length,
+    1,
+  );
+  assert.ok(
+    tmux.calls.some((args) => args[0] === "if-shell" && args[3] === "@9"),
+  );
   assert.ok(
     tmux.calls.some(
       (args) =>
@@ -94,8 +110,8 @@ test("start, intermediate end, settle, and shutdown only touch owned options", a
 
 test("late spinner cannot overwrite settled or shutdown status", async () => {
   const tmux = fakeTmux();
-  const status = new TabStatus(tmux.run);
-  await status.startSession("%2");
+  const status = createStatus(tmux.run);
+  await status.startSession();
   await sleep(5);
   const entered = tmux.blockNext();
   status.start();
@@ -111,10 +127,10 @@ test("late spinner cannot overwrite settled or shutdown status", async () => {
 
 test("old instance cannot clear newer instance's status", async () => {
   const tmux = fakeTmux();
-  const old = new TabStatus(tmux.run);
-  const newer = new TabStatus(tmux.run);
-  await old.startSession("%2");
-  await newer.startSession("%2");
+  const old = createStatus(tmux.run);
+  const newer = createStatus(tmux.run);
+  await old.startSession();
+  await newer.startSession();
   await sleep(10);
   const owner = tmux.options.get("@pi_notify_owner");
   old.start();
@@ -127,17 +143,17 @@ test("old instance cannot clear newer instance's status", async () => {
 
 test("failed discovery or tmux update leaves Pi usable", async () => {
   const calls = [];
-  const status = new TabStatus(async (args) => {
+  const status = createStatus(async (args) => {
     calls.push(args);
     throw new Error("no tmux");
   });
-  await status.startSession("%2");
+  await status.startSession();
   status.start();
   status.settled();
   await status.shutdown();
   assert.equal(calls.length, 1);
   const tmux = fakeTmux();
-  const bad = new TabStatus(async (args) => {
+  const bad = createStatus(async (args) => {
     if (
       args[0] === "if-shell" &&
       args[5].includes("@pi_notify_status") &&
@@ -146,7 +162,7 @@ test("failed discovery or tmux update leaves Pi usable", async () => {
       throw new Error("failed");
     return tmux.run(args);
   });
-  await bad.startSession("%2");
+  await bad.startSession();
   await sleep(5);
   await bad.shutdown();
   assert.equal(tmux.options.size, 0);

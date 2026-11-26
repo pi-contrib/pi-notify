@@ -1,15 +1,15 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { tmuxLocation, tmuxRunner } from "./tmux/runner.ts";
+import { TmuxClient } from "./tmux/client.ts";
 import { TabStatus } from "./tmux/status.ts";
 
 export default function (pi: ExtensionAPI): void {
   let status: TabStatus | undefined;
 
   pi.on("session_start", async () => {
-    const location = tmuxLocation();
-    if (!location) return;
-    status = new TabStatus(tmuxRunner(location.socket));
-    await status.startSession(location.pane);
+    const tmux = TmuxClient.fromEnv();
+    if (!tmux) return;
+    status = new TabStatus(tmux);
+    await status.startSession();
   });
 
   pi.on("agent_start", () => status?.start());
