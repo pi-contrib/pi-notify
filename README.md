@@ -4,7 +4,7 @@ An animated tmux tab indicator for [Pi](https://pi.dev). See when Pi is working 
 
 ## How it works
 
-Pi Notify updates only the window-scoped tmux option `@pi_notify_status`. It shows a Unicode spinner while Pi works (including retries and queued work), then `✓` when the run settles or is aborted. On exit, session switch, or `/reload`, it clears its option value. The extension never edits tmux formats or window titles; you choose where the placeholder appears in your tab.
+Pi Notify updates only the window-scoped tmux option `@pi_notify_status`. It pulses a single square (`□` ↔ `■`) while Pi works (including retries and queued work), then `✓` when the run settles or is aborted. On exit, session switch, or `/reload`, it clears its option value. The extension never edits tmux formats or window titles; you choose where the placeholder appears in your tab.
 
 A tmux window shared by multiple Pi panes has **one** tab placeholder. V1 supports one active Pi instance per window: the newest instance owns it, and an older instance will not clear the newer instance's status. Force-killing Pi can leave a stale value; starting Pi again in that window replaces it.
 

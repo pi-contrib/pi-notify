@@ -90,9 +90,9 @@ test("start, intermediate end, settle, and shutdown only touch owned options", a
   assert.equal(tmux.options.get("@pi_notify_status"), "✓");
   status.start();
   await sleep(10);
-  assert.equal(tmux.options.get("@pi_notify_status"), "⠋");
+  assert.equal(tmux.options.get("@pi_notify_status"), "□");
   await sleep(520);
-  assert.notEqual(tmux.options.get("@pi_notify_status"), "✓");
+  assert.equal(tmux.options.get("@pi_notify_status"), "■");
   status.settled(); // also used for aborted runs
   await sleep(10);
   assert.equal(tmux.options.get("@pi_notify_status"), "✓");

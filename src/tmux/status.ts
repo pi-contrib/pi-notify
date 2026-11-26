@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { ifOwner, type Run, redraw, resolveWindow } from "./runner.ts";
 
-const frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+const frames = ["□", "■"];
 
 export class TabStatus {
   private readonly token = randomUUID();
