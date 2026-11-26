@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/pi-contrib/pi-notify/compare/v0.3.1...v0.4.0) (2026-11-26)
+
+
+### Features
+
+* use square-in-square ready indicator ([02f8864](https://github.com/pi-contrib/pi-notify/commit/02f88649eca7f03a92f186b0ecb324a2c28c595f))
+
 ## [0.3.1](https://github.com/pi-contrib/pi-notify/compare/v0.3.0...v0.3.1) (2026-11-26)
 
 
