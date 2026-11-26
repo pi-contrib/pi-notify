@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/pi-contrib/pi-notify/compare/v0.3.0...v0.3.1) (2026-11-26)
+
+
+### Bug Fixes
+
+* use Pi's built-in extension configuration ([8ae3500](https://github.com/pi-contrib/pi-notify/commit/8ae3500d035a83a36804c7253495d39619601c10))
+
 ## [0.3.0](https://github.com/pi-contrib/pi-notify/compare/v0.2.0...v0.3.0) (2026-11-26)
 
 
