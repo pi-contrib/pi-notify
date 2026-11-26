@@ -73,7 +73,7 @@ test("start, intermediate end, settle, and shutdown only touch owned options", a
   const status = createStatus(tmux.run);
   await status.startSession();
   await sleep(5);
-  assert.equal(tmux.options.get("@pi_notify_status"), "✓");
+  assert.equal(tmux.options.get("@pi_notify_status"), "⊡");
   status.start();
   await sleep(10);
   assert.equal(tmux.options.get("@pi_notify_status"), "□");
@@ -81,7 +81,7 @@ test("start, intermediate end, settle, and shutdown only touch owned options", a
   assert.equal(tmux.options.get("@pi_notify_status"), "■");
   status.settled(); // also used for aborted runs
   await sleep(10);
-  assert.equal(tmux.options.get("@pi_notify_status"), "✓");
+  assert.equal(tmux.options.get("@pi_notify_status"), "⊡");
   await status.shutdown();
   assert.equal(tmux.options.size, 0);
   assert.equal(
@@ -119,7 +119,7 @@ test("late spinner cannot overwrite settled or shutdown status", async () => {
   status.settled();
   tmux.unblock();
   await sleep(10);
-  assert.equal(tmux.options.get("@pi_notify_status"), "✓");
+  assert.equal(tmux.options.get("@pi_notify_status"), "⊡");
   status.start();
   await status.shutdown();
   assert.equal(tmux.options.size, 0);
@@ -136,7 +136,7 @@ test("old instance cannot clear newer instance's status", async () => {
   old.start();
   await old.shutdown();
   assert.equal(tmux.options.get("@pi_notify_owner"), owner);
-  assert.equal(tmux.options.get("@pi_notify_status"), "✓");
+  assert.equal(tmux.options.get("@pi_notify_status"), "⊡");
   await newer.shutdown();
   assert.equal(tmux.options.size, 0);
 });

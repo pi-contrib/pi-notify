@@ -58,7 +58,7 @@ export class TabStatus {
     this.stopTimer();
     this.working = false;
     this.generation++;
-    this.queue("✓", this.generation);
+    this.queue("⊡", this.generation);
   }
 
   private stopTimer(): void {
