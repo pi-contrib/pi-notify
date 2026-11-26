@@ -29,14 +29,14 @@ pi install npm:@pi-contrib/pi-notify
 
 For a reproducible install, append a release tag (for GitHub) or a version (for npm). Restart Pi or run `/reload`.
 
-**One-time tmux setup:** Add `#{@pi_notify_status}` wherever you want the indicator in **both** `window-status-format` and `window-status-current-format`. For example, in `~/.tmux.conf`:
+**One-time tmux setup:** Add the status option to **both** `window-status-format` and `window-status-current-format`. Put the separating space inside a tmux conditional so an empty indicator leaves no extra space. For example, in `~/.tmux.conf`:
 
 ```tmux
-set -g window-status-format '#I:#W #{@pi_notify_status}'
-set -g window-status-current-format '#I:#W #{@pi_notify_status}'
+set -g window-status-format '#I:#W#{?#{@pi_notify_status}, #{@pi_notify_status},}'
+set -g window-status-current-format '#I:#W#{?#{@pi_notify_status}, #{@pi_notify_status},}'
 ```
 
-The example replaces both formats. If you've customized them, add the placeholder to your existing formats instead so your styling remains intact. Reload with `tmux source-file ~/.tmux.conf`. Without the placeholder Pi still updates its option, but nothing appears in the tab.
+The example replaces both formats. If you've customized them, append `#{?#{@pi_notify_status}, #{@pi_notify_status},}` to your **existing** formats instead so your styling remains intact. Do not add a space before the conditional: it supplies one only when the option has a value. Reload with `tmux source-file ~/.tmux.conf`. Without the status option in the formats Pi still updates it, but nothing appears in the tab.
 
 ## Configuration
 
@@ -46,7 +46,7 @@ Tmux integration is enabled by default. To disable it, create `${XDG_CONFIG_HOME
 { "tmux": { "enabled": false } }
 ```
 
-Set `enabled` to `true` (or remove the file) to re-enable. Restart Pi or run `/reload` after a change. Disabling clears the reloading instance's value; the placeholder stays in your format but displays nothing. Invalid or missing config defaults to enabled. Outside tmux, Pi runs normally without updating tabs.
+Set `enabled` to `true` (or remove the file) to re-enable. Restart Pi or run `/reload` after a change. Disabling clears the reloading instance's value; the conditional placeholder stays in your format but displays nothing and adds no space. Invalid or missing config defaults to enabled. Outside tmux, Pi runs normally without updating tabs.
 
 ## Development
 
