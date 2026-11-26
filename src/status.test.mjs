@@ -1,9 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 import { test } from "node:test";
-import { configPath, tmuxEnabled } from "./config.ts";
 import { resolveWindow, tmuxLocation } from "./tmux/runner.ts";
 import { TabStatus } from "./tmux/status.ts";
 
@@ -49,25 +45,6 @@ function fakeTmux() {
     unblock: () => release(),
   };
 }
-
-test("config defaults on and only explicit false disables", async () => {
-  const dir = await mkdtemp(join(tmpdir(), "pi-notify-"));
-  const path = join(dir, "config.json");
-  assert.equal(
-    configPath({ XDG_CONFIG_HOME: dir }),
-    join(dir, "pi-notify", "config.json"),
-  );
-  assert.equal(await tmuxEnabled(path), true);
-  for (const [text, expected] of [
-    ['{"tmux":{"enabled":false}}', false],
-    ['{"tmux":{"enabled":true}}', true],
-    ["{}", true],
-    ["broken", true],
-  ]) {
-    await writeFile(path, text);
-    assert.equal(await tmuxEnabled(path), expected);
-  }
-});
 
 test("location and target validation", async () => {
   assert.equal(tmuxLocation({}), undefined);

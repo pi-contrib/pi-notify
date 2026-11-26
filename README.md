@@ -40,13 +40,9 @@ The example replaces both formats. If you've customized them, append `#{?#{@pi_n
 
 ## Configuration
 
-Tmux integration is enabled by default. To disable it, create `${XDG_CONFIG_HOME:-~/.config}/pi-notify/config.json`:
+Tmux integration is active whenever this extension is loaded inside tmux. To turn it off, use Pi's built-in `pi config` command to disable the Pi Notify extension, then restart Pi or run `/reload`. Re-enable it the same way. On reload or exit, Pi Notify clears its tab status; the conditional placeholder stays in your tmux format but displays nothing and adds no space. Outside tmux, Pi runs normally without updating tabs.
 
-```json
-{ "tmux": { "enabled": false } }
-```
-
-Set `enabled` to `true` (or remove the file) to re-enable. Restart Pi or run `/reload` after a change. Disabling clears the reloading instance's value; the conditional placeholder stays in your format but displays nothing and adds no space. Invalid or missing config defaults to enabled. Outside tmux, Pi runs normally without updating tabs.
+If you previously created `${XDG_CONFIG_HOME:-~/.config}/pi-notify/config.json`, you can delete it; Pi Notify no longer reads it.
 
 ## Development
 
@@ -61,7 +57,7 @@ npm pack --dry-run
 pi -e ./src/index.ts
 ```
 
-Run `npm run format` to apply Biome formatting, import sorting, and safe lint fixes. For a manual check, start Pi inside an attached tmux session with the placeholder in both tab formats: submit a prompt and confirm the spinner animates, remains active across intermediate work, becomes `✓` after settle or abort, and disappears on exit. Test `/reload` after toggling the config.
+Run `npm run format` to apply Biome formatting, import sorting, and safe lint fixes. For a manual check, start Pi inside an attached tmux session with the placeholder in both tab formats: submit a prompt and confirm the spinner animates, remains active across intermediate work, becomes `✓` after settle or abort, and disappears on exit. Test `/reload` after disabling or re-enabling the extension with `pi config`.
 
 Release Please creates release PRs. Merging one tags the release and publishes the npm package to GitHub Packages. The repository must allow Actions to create pull requests, and the organization must allow the workflow to publish packages.
 
