@@ -9,6 +9,7 @@ export class TabStatus {
   private closed = false;
   private failed = false;
   private working = false;
+  private waiting = false;
   private frame = 0;
   private timer?: ReturnType<typeof setInterval>;
   private pending: Promise<void> = Promise.resolve();
@@ -31,34 +32,55 @@ export class TabStatus {
       if (this.closed) return;
       await this.tmux.claimTabIndicator(this.token);
       this.claimed = true;
-      if (!this.closed) this.settled();
+      this.render();
     } catch {
       this.failed = true;
     }
   }
 
   start(): void {
-    if (this.closed || this.failed || !this.claimed) return;
-    this.stopTimer();
+    if (this.closed || this.failed) return;
     this.working = true;
-    this.generation++;
     this.frame = 0;
-    this.queue(frames[this.frame++], this.generation);
-    this.timer = setInterval(() => {
-      // Drop ticks while a tmux command is outstanding rather than queueing stale frames.
-      if (!this.working || this.busy) return;
-      this.queue(frames[this.frame++ % frames.length], this.generation);
-    }, 100);
+    this.render();
   }
 
   private busy = false;
 
   settled(): void {
+    if (this.closed || this.failed) return;
+    this.working = false;
+    this.render();
+  }
+
+  waitingStarted(): void {
+    if (this.closed || this.failed || this.waiting) return;
+    this.waiting = true;
+    this.render();
+  }
+
+  waitingEnded(): void {
+    if (this.closed || this.failed || !this.waiting) return;
+    this.waiting = false;
+    this.render();
+  }
+
+  private render(): void {
     if (this.closed || this.failed || !this.claimed) return;
     this.stopTimer();
-    this.working = false;
     this.generation++;
-    this.queue("⣿", this.generation);
+    if (this.waiting) {
+      this.queue("❯", this.generation);
+    } else if (this.working) {
+      this.queue(frames[this.frame++ % frames.length], this.generation);
+      this.timer = setInterval(() => {
+        // Drop ticks while a tmux command is outstanding rather than queueing stale frames.
+        if (!this.working || this.waiting || this.busy) return;
+        this.queue(frames[this.frame++ % frames.length], this.generation);
+      }, 100);
+    } else {
+      this.queue("⣿", this.generation);
+    }
   }
 
   private stopTimer(): void {

@@ -108,6 +108,87 @@ test("start, intermediate end, settle, and shutdown only touch owned options", a
   );
 });
 
+test("prompt pauses the spinner and resumes it when closed", async () => {
+  const tmux = fakeTmux();
+  const status = createStatus(tmux.run);
+  await status.startSession();
+  status.start();
+  await sleep(10);
+  assert.equal(tmux.options.get("@pi_notify_status"), "⣷");
+  status.waitingStarted();
+  await sleep(10);
+  assert.equal(tmux.options.get("@pi_notify_status"), "❯");
+  await sleep(150);
+  assert.equal(tmux.options.get("@pi_notify_status"), "❯");
+  status.waitingEnded();
+  await sleep(10);
+  assert.equal(tmux.options.get("@pi_notify_status"), "⣯");
+  await status.shutdown();
+  assert.equal(tmux.options.size, 0);
+});
+
+test("idle prompts and agent transitions keep waiting until the prompt ends", async () => {
+  const tmux = fakeTmux();
+  const status = createStatus(tmux.run);
+  await status.startSession();
+  status.waitingStarted();
+  await sleep(10);
+  assert.equal(tmux.options.get("@pi_notify_status"), "❯");
+  status.start();
+  await sleep(10);
+  assert.equal(tmux.options.get("@pi_notify_status"), "❯");
+  status.settled();
+  await sleep(10);
+  assert.equal(tmux.options.get("@pi_notify_status"), "❯");
+  status.waitingEnded();
+  await sleep(10);
+  assert.equal(tmux.options.get("@pi_notify_status"), "⣿");
+  status.waitingStarted();
+  await status.shutdown();
+  status.waitingEnded();
+  assert.equal(tmux.options.size, 0);
+});
+
+test("prompt during session initialization is not overwritten by idle status", async () => {
+  const tmux = fakeTmux();
+  let resolveDiscovery;
+  const status = createStatus(async (args) => {
+    if (args[0] === "display-message")
+      await new Promise((resolve) => {
+        resolveDiscovery = resolve;
+      });
+    return tmux.run(args);
+  });
+  const initializing = status.startSession();
+  status.waitingStarted();
+  resolveDiscovery();
+  await initializing;
+  await sleep(10);
+  assert.equal(tmux.options.get("@pi_notify_status"), "❯");
+  status.waitingEnded();
+  await sleep(10);
+  assert.equal(tmux.options.get("@pi_notify_status"), "⣿");
+  await status.shutdown();
+});
+
+test("late spinner cannot overwrite a prompt or shutdown status", async () => {
+  const tmux = fakeTmux();
+  const status = createStatus(tmux.run);
+  await status.startSession();
+  const entered = tmux.blockNext();
+  status.start();
+  await entered;
+  status.waitingStarted();
+  tmux.unblock();
+  await sleep(10);
+  assert.equal(tmux.options.get("@pi_notify_status"), "❯");
+  status.waitingEnded();
+  await sleep(10);
+  assert.equal(tmux.options.get("@pi_notify_status"), "⣯");
+  await status.shutdown();
+  assert.equal(tmux.options.size, 0);
+});
+
 test("late spinner cannot overwrite settled or shutdown status", async () => {
   const tmux = fakeTmux();
   const status = createStatus(tmux.run);

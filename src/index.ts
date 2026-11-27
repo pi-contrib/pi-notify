@@ -15,6 +15,8 @@ export default function (pi: ExtensionAPI): void {
   pi.on("agent_start", () => status?.start());
   // agent_end may be followed by retries or queued work; wait for final settlement.
   pi.on("agent_settled", () => status?.settled());
+  pi.on("ui_prompt_start", () => status?.waitingStarted());
+  pi.on("ui_prompt_end", () => status?.waitingEnded());
   pi.on("session_shutdown", async () => {
     const current = status;
     status = undefined;
