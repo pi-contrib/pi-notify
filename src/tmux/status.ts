@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { TmuxClient } from "./client.ts";
 
-const frames = ["□", "■"];
+const frames = ["⣷", "⣯", "⣟", "⡿", "⢿", "⣻", "⣽", "⣾"];
 
 export class TabStatus {
   private readonly token = randomUUID();
@@ -48,7 +48,7 @@ export class TabStatus {
       // Drop ticks while a tmux command is outstanding rather than queueing stale frames.
       if (!this.working || this.busy) return;
       this.queue(frames[this.frame++ % frames.length], this.generation);
-    }, 500);
+    }, 100);
   }
 
   private busy = false;
@@ -58,7 +58,7 @@ export class TabStatus {
     this.stopTimer();
     this.working = false;
     this.generation++;
-    this.queue("⊡", this.generation);
+    this.queue("⣿", this.generation);
   }
 
   private stopTimer(): void {
